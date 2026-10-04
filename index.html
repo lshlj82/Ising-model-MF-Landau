@@ -1,0 +1,647 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mean-field and Landau theory of the Ising model</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+
+:root{
+  --paper:#EEF2F6; --panel:#FFFFFF; --ink:#15243A; --muted:#566779; --rule:#CBD5E0; --grid:#E3E9F0;
+  --accent:#1F4FD1; --crit:#B4235A;
+  --l16:#E69F00; --l32:#56B4E9; --l64:#009E73; --l128:#CC79A7; --l256:#0B5FA5;
+  --serif:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans:"Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1924; --panel:#142232; --ink:#E2E9F1; --muted:#93A4B8; --rule:#2B3D52; --grid:#1B2B3D;
+    --accent:#7A9DFF; --crit:#FF6F9C;
+    --l16:#F0B43C; --l32:#6CC3F2; --l64:#2FC596; --l128:#E08FC1; --l256:#8FB8FF;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1924; --panel:#142232; --ink:#E2E9F1; --muted:#93A4B8; --rule:#2B3D52; --grid:#1B2B3D;
+  --accent:#7A9DFF; --crit:#FF6F9C;
+  --l16:#F0B43C; --l32:#6CC3F2; --l64:#2FC596; --l128:#E08FC1; --l256:#8FB8FF;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0; color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.5;
+  background-color:var(--paper);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size:24px 24px;
+  font-variant-numeric:tabular-nums;
+}
+.wrap{max-width:1180px; margin:0 auto; padding:28px 20px 60px}
+h1,h2,h3{font-family:var(--serif); font-weight:600; line-height:1.15; margin:0}
+h1{font-size:clamp(30px,4.6vw,48px); letter-spacing:-0.01em}
+h2{font-size:clamp(22px,2.8vw,30px); margin-bottom:8px}
+p{margin:0 0 10px}
+.lede{font-family:var(--serif); font-size:18px; line-height:1.55; max-width:68ch; margin-top:12px; color:var(--ink)}
+.prose{max-width:72ch; font-family:var(--serif); font-size:16.5px; line-height:1.6}
+section{margin-top:44px}
+sub{font-size:.72em}
+.hero{display:grid; grid-template-columns:minmax(0,1.25fr) minmax(290px,1fr); gap:28px; margin-top:26px; align-items:start}
+@media (max-width:860px){.hero{grid-template-columns:1fr}}
+.plate{background:var(--panel); border:2px solid var(--ink); padding:10px; border-radius:3px}
+#lat{width:100%; aspect-ratio:1/1; display:block; image-rendering:pixelated}
+.plate-note{font-size:13px; color:var(--muted); margin-top:8px}
+.controls{display:flex; flex-direction:column; gap:14px}
+.pbig{font-family:var(--serif); font-size:clamp(40px,6vw,64px); line-height:1; font-weight:600; letter-spacing:-0.02em}
+.pbig span{font-style:italic; font-weight:400}
+.slider-wrap{position:relative; padding-bottom:18px}
+input[type=range]{width:100%; accent-color:var(--accent); margin:0}
+.pcmark{position:absolute; top:22px; transform:translateX(-50%); font-size:12px; color:var(--crit); white-space:nowrap}
+.pcmark::before{content:""; position:absolute; left:50%; top:-6px; width:1px; height:6px; background:var(--crit)}
+.row{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+button,select{font:inherit; font-size:14px; color:var(--ink); background:var(--panel); border:1px solid var(--rule); border-radius:5px; padding:6px 11px; cursor:pointer}
+button:hover{border-color:var(--ink)}
+button.primary{background:var(--ink); color:var(--panel); border-color:var(--ink)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+fieldset{border:0; padding:0; margin:0}
+legend{font-size:13px; color:var(--muted); margin-bottom:4px}
+.seg{display:inline-flex; border:1px solid var(--rule); border-radius:5px; overflow:hidden; background:var(--panel)}
+.seg label{padding:6px 11px; font-size:14px; cursor:pointer}
+.seg input{position:absolute; opacity:0; pointer-events:none}
+.seg input:checked + span{font-weight:600; color:var(--accent)}
+.seg input:focus-visible + span{outline:2px solid var(--accent); outline-offset:2px}
+.field label.lab{font-size:13px; color:var(--muted); display:block; margin-bottom:4px}
+dl.readouts{display:grid; grid-template-columns:auto 1fr; gap:6px 16px; margin:0; padding:12px 14px; background:var(--panel); border:1px solid var(--rule); border-radius:5px}
+dl.readouts dt{color:var(--muted); font-size:14px}
+dl.readouts dd{margin:0; font-weight:600; text-align:right}
+.status{display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; margin:12px 0 4px; font-size:13.5px}
+.chip{display:inline-flex; align-items:center; gap:6px}
+.sw{width:18px; height:3px; border-radius:2px; display:inline-block}
+.bar{height:4px; background:var(--grid); border-radius:2px; overflow:hidden; flex:1 1 160px; max-width:260px}
+.bar i{display:block; height:100%; width:0; background:var(--accent)}
+.figs{display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; margin-top:14px}
+figure{margin:0; background:var(--panel); border:1px solid var(--rule); border-radius:5px; padding:12px 12px 10px}
+figcaption{font-size:13.5px; color:var(--muted); margin-bottom:6px}
+figcaption b{color:var(--ink); font-weight:600; font-size:14.5px; display:block}
+figure canvas{width:100%; height:240px; display:block}
+figure.sq canvas{height:auto; aspect-ratio:1/1}
+figure.wide{grid-column:1 / -1}
+.stages{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px}
+@media (max-width:700px){.stages{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}}
+.stages canvas{width:100%; height:auto; aspect-ratio:1/1; display:block; border:1px solid var(--rule)}
+.stlab{display:block; font-size:12.5px; color:var(--muted); margin-top:4px}
+.fit{font-size:13.5px; margin:6px 0 0; min-height:1.4em}
+.clickable canvas{cursor:crosshair}
+.tbl{overflow-x:auto; margin-top:14px; background:var(--panel); border:1px solid var(--rule); border-radius:5px}
+table{border-collapse:collapse; width:100%; font-size:14px; min-width:640px}
+th,td{padding:8px 12px; text-align:left; border-bottom:1px solid var(--grid); vertical-align:top}
+th{font-weight:600; color:var(--muted); font-size:13px}
+td.num{text-align:right; white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.good{color:var(--l64)} .warn{color:var(--crit)}
+.two{display:grid; grid-template-columns:minmax(0,1.4fr) minmax(260px,1fr); gap:20px; margin-top:14px; align-items:start}
+@media (max-width:860px){.two{grid-template-columns:1fr}}
+.two figure canvas{height:340px}
+.sl{display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:center; margin-bottom:12px}
+.sl label{font-size:14px}
+.sl output{font-weight:600}
+.sl input{grid-column:1 / -1}
+.note{font-size:13px; color:var(--muted); max-width:80ch}
+.keyref{border-left:4px solid var(--accent); background:var(--panel); padding:12px 16px; border-radius:0 5px 5px 0; margin:12px 0 16px; max-width:80ch}
+ol.refs{max-width:80ch; padding-left:1.4em; font-size:14.5px; line-height:1.55}
+ol.refs li{margin-bottom:8px}
+footer{margin-top:48px; font-size:13px; color:var(--muted); max-width:80ch}
+
+#st{width:100%; aspect-ratio:4/3; display:block; image-rendering:pixelated}
+#strip{width:100%; height:34px; display:block; margin-bottom:8px}
+.keyref{border-left:4px solid var(--accent); background:var(--panel); padding:12px 16px; border-radius:0 5px 5px 0; margin:12px 0 16px; max-width:80ch}
+ol.refs{max-width:80ch; padding-left:1.4em; font-size:14.5px; line-height:1.55}
+ol.refs li{margin-bottom:8px}
+.eq{font-family:var(--serif); font-size:17px; background:var(--panel); border:1px solid var(--rule); border-radius:5px; padding:10px 14px; display:inline-block; margin:6px 0 10px}
+.sl{display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:center; margin-bottom:12px}
+.sl label{font-size:14px} .sl output{font-weight:600} .sl input{grid-column:1 / -1}
+.btns{display:flex; flex-wrap:wrap; gap:6px} .btns button{padding:4px 9px; font-size:13px}
+.mat{display:inline-grid; grid-template-columns:auto auto auto; gap:4px 14px; align-items:center; font-family:var(--serif); font-size:17px; background:var(--panel); border:1px solid var(--rule); border-radius:5px; padding:10px 16px; margin:6px 12px 10px 0}
+.mat .h{font-family:var(--sans); font-size:12.5px; color:var(--muted)}
+.chain{display:flex; flex-wrap:wrap; gap:0; margin:8px 0; font-family:var(--sans)}
+.chain span{width:26px; height:30px; border:1px solid var(--ink); margin-left:-1px; display:flex; align-items:center; justify-content:center; font-size:16px; background:var(--panel)}
+.chain span.dn{background:var(--ink); color:var(--panel)}
+.chain span.wall{box-shadow:inset 3px 0 0 var(--crit)}
+.two2{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:20px; align-items:start; margin-top:14px}
+@media (max-width:860px){.two2{grid-template-columns:1fr}}
+
+.rad{white-space:nowrap}
+.rad .rs{display:inline-block; transform:scale(1.05,1.22); transform-origin:100% 85%; margin-right:-0.05em}
+.rad .rc{display:inline-block; border-top:0.075em solid currentColor; padding:0.04em 0.12em 0 0.1em; line-height:1.1}
+.ss{display:inline-flex; flex-direction:column; vertical-align:0.5em; line-height:1; font-size:0.72em; margin-left:0.04em; margin-right:0.04em}
+.ss sup,.ss sub{font-size:1em; vertical-align:baseline; line-height:1.02; position:static}
+
+#pd{width:100%; height:auto; aspect-ratio:4/3; display:block; cursor:crosshair; touch-action:none}
+#grid9{width:100%; height:auto; aspect-ratio:1/1; display:block}
+.hero figure canvas{height:260px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Mean-field and Landau theory of the Ising model</h1>
+  <p class="lede">Replace the fluctuating neighbors of each spin by their average, and the Ising model becomes a system of independent spins in an effective field. The resulting self-consistency equation has a phase transition at T<sub>c</sub> = Jz/k<sub>B</sub>, with critical exponents α = 0, β = 1/2, γ = 1 and δ = 3. Landau theory recovers them all from a fourth-order polynomial in the order parameter.</p>
+  <p class="note" style="margin-top:6px">Based on lecture notes by Sang Hoon Lee for Chapter 2, following K. Christensen and N. R. Moloney, <i>Complexity and Criticality</i> (2005). Units: k<sub>B</sub> = 1 and J = 1, so T<sub>c</sub> = z. <a href="#references" style="color:var(--accent)">References</a></p>
+</header>
+
+<section style="margin-top:28px">
+  <h2>The idea: replace the neighbors by their average</h2>
+  <p class="prose">Each spin interacts only with its z nearest neighbors, and those neighbors fluctuate. Mean-field theory replaces them by their average magnetization m. What is left is one spin in a steady effective field, which must reproduce the m it was built from.</p>
+  <figure style="margin:16px 0 6px"><figcaption><b>The idea in one picture</b>(a) In the Ising model the center spin feels its z actual neighbors, so the field acting on it, J Σ<sub>j</sub> s<sub>j</sub> + H, jumps around as they flip. (b) Each neighbor is split into its average m (gray) and a fluctuation s<sub>j</sub> − m (colored); mean-field theory drops the products of fluctuations. (c) What remains: every neighbor is replaced by the same average m, so the center feels a steady effective field Jzm + H. Blue rings mark the z nearest neighbors of s<sub>i</sub>. The panels follow T, H and z set in the interactive panel below; for this illustration the spins in (a) are drawn independently with average m, so the correlations of the real model are left out.</figcaption>
+    <canvas id="ill" style="height:auto; aspect-ratio:2.4/1" aria-label="Conceptual illustration of the mean-field approximation"></canvas>
+  </figure>
+  <div class="two2" style="margin-top:6px">
+    <figure style="margin:0"><figcaption><b>The field on the center spin over time</b>Red: J Σ<sub>j</sub> s<sub>j</sub> + H from the fluctuating neighbors in (a). Blue: the mean-field value Jzm + H, its average. Mean-field theory keeps the blue line and throws away the scatter around it.</figcaption><canvas id="hloc"></canvas></figure>
+    <figure style="margin:0"><figcaption><b>Closing the loop: self-consistency</b>Guess m, compute the effective field h = Jzm + H, let the center spin respond with ⟨s⟩ = tanh(βh), and use that as the next guess. The fixed point is the mean-field m.</figcaption>
+      <div class="row" style="margin:4px 0 8px"><button id="itStep" class="primary">Go around the loop once</button><button id="itRun">Go around 20 times</button><button id="itReset">Start again from m = 0.3</button></div>
+      <canvas id="itC" style="height:200px"></canvas>
+      <dl class="readouts" id="itRead" style="margin-top:8px"></dl>
+    </figure>
+  </div>
+</section>
+
+<div class="hero">
+  <div class="figs" style="margin-top:0; grid-template-columns:1fr">
+    <figure><figcaption><b>Graphical solution of m = tanh[(T<sub>c</sub>m + H)/T]</b>Solutions are where the curve crosses the dashed diagonal. Filled dots are stable (minima of f), open dots unstable (maxima).</figcaption><canvas id="sce"></canvas></figure>
+    <figure><figcaption><b>Free energy per spin f(m) and where the system sits</b>Solid: mean-field f = Jzm²/2 − k<sub>B</sub>T ln[2 cosh(β(Jzm + H))]. Dashed: the Landau expansion. The ball rolls downhill on the solid curve.</figcaption><canvas id="fm"></canvas></figure>
+  </div>
+  <div class="controls">
+    <div class="pbig"><span>T</span>/<span>T</span><sub>c</sub> = <output id="tOut"></output></div>
+    <div class="slider-wrap"><input type="range" id="tSl" min="0.2" max="2" step="0.001" aria-label="Temperature relative to the critical temperature"><div class="pcmark" style="left:44.44%">T<sub>c</sub></div></div>
+    <div class="btns"><button data-t="0.8">0.8</button><button data-t="0.92">0.92</button><button data-t="1">1</button><button data-t="1.2">1.2</button></div>
+    <div class="sl" style="margin:6px 0 0"><label for="hSl">External field H (units of J)</label><output id="hOut"></output><input type="range" id="hSl" min="-1.5" max="1.5" step="0.005" value="0"></div>
+    <div class="row" style="gap:16px">
+      <div class="field"><label class="lab" for="zSel">Coordination number z</label><select id="zSel"><option value="2">z = 2 (chain)</option><option value="4" selected>z = 4 (square lattice)</option><option value="6">z = 6 (cubic lattice)</option><option value="8">z = 8</option></select></div>
+      <fieldset><legend>The ball</legend><div class="seg"><label><input type="radio" name="bm" value="local" checked><span>Rolls to the nearest minimum</span></label><label><input type="radio" name="bm" value="global"><span>Jumps to the lowest</span></label></div></fieldset>
+    </div>
+    <div class="row"><button id="flip">Sweep H from +1 to −1 and back</button><button id="clearTrail">Clear the trail</button></div>
+    <dl class="readouts">
+      <dt>T<sub>c</sub> = Jz/k<sub>B</sub></dt><dd id="rTc">–</dd>
+      <dt>Solutions of the self-consistency equation</dt><dd id="rSol">–</dd>
+      <dt>Equilibrium m (lowest f)</dt><dd id="rM">–</dd>
+      <dt>Where the ball sits</dt><dd id="rB">–</dd>
+      <dt>Free energy per spin there</dt><dd id="rF">–</dd>
+    </dl>
+    <figure style="margin-top:2px"><figcaption><b>Trail of the ball in the (H, m) plane</b>Below T<sub>c</sub> the ball stays in a metastable minimum after H changes sign, until that minimum disappears: hysteresis. Equilibrium jumps at H = 0 instead.</figcaption><canvas id="trail"></canvas></figure>
+  </div>
+</div>
+
+<section>
+  <h2>The mean-field approximation</h2>
+  <p class="prose">Write each spin as its average plus a fluctuation, s<sub>i</sub> = ⟨s<sub>i</sub>⟩ + (s<sub>i</sub> − ⟨s<sub>i</sub>⟩), with ⟨s<sub>i</sub>⟩ = m. The interaction energy then contains a term of second order in the fluctuations, (s<sub>i</sub> − m)(s<sub>j</sub> − m), which mean-field theory neglects. Each of the Nz/2 bonds is then s<sub>i</sub>s<sub>j</sub> ≈ (s<sub>i</sub> + s<sub>j</sub>)m − m², and summing gives</p>
+  <div class="eq">E<sub>{s<sub>i</sub>}</sub> ≈ −(Jzm + H) Σ<sub>i</sub> s<sub>i</sub> + NJzm²/2</div>
+  <p class="prose">This is a system of non-interacting spins in an effective field Jzm + H, the external field plus an internal field from the z neighbors, plus a constant. Its partition function factorizes as before:</p>
+  <div class="eq">Z = e<sup>−βNJzm²/2</sup>[2 cosh(βJzm + βH)]<sup>N</sup>,  f = Jzm²/2 − k<sub>B</sub>T ln[2 cosh(βJzm + βH)]</div>
+  <p class="prose">The order parameter m is not a free variable: in equilibrium it takes the value that minimizes f. Setting ∂f/∂m = 0, or equivalently m = −∂f/∂H, gives the self-consistency equation m = tanh(βJzm + βH). At H = 0 it reads m<sub>0</sub> = tanh[(T<sub>c</sub>/T)m<sub>0</sub>] with T<sub>c</sub> = Jz/k<sub>B</sub>. The slope of the right-hand side at m = 0 is T<sub>c</sub>/T, so nonzero solutions exist only below T<sub>c</sub>.</p>
+  <div class="figs">
+    <figure><figcaption><b>Mean field against exact results</b>m<sub>0</sub>(T) from mean field for the square lattice (z = 4, blue) and the chain (z = 2, green), against Onsager’s exact 2D result (dark). Dashed lines mark each T<sub>c</sub>. The chain’s exact T<sub>c</sub> is 0, so mean field fails there.</figcaption><canvas id="cmp"></canvas></figure>
+    <figure><figcaption><b>Phase diagram: m(T, H)</b>Color: equilibrium m (blue positive, red negative). The line of first-order transitions at H = 0 ends at the critical point (T<sub>c</sub>, 0). Click or drag to set T and H above.</figcaption><canvas id="pd"></canvas></figure>
+  </div>
+  <div class="tbl"><table aria-label="Mean-field and exact critical temperatures">
+    <thead><tr><th>Lattice</th><th style="text-align:right">z</th><th style="text-align:right">Mean-field k<sub>B</sub>T<sub>c</sub>/J</th><th style="text-align:right">Exact or best known k<sub>B</sub>T<sub>c</sub>/J</th></tr></thead>
+    <tbody><tr><td><b>Chain (d = 1)</b></td><td class="num">2</td><td class="num">2</td><td class="num">0 (no transition)</td></tr>
+    <tr><td><b>Square (d = 2)</b></td><td class="num">4</td><td class="num">4</td><td class="num">2.269 (Onsager)</td></tr>
+    <tr><td><b>Simple cubic (d = 3)</b></td><td class="num">6</td><td class="num">6</td><td class="num">≈ 4.51 (numerical)</td></tr></tbody></table></div>
+</section>
+
+<section>
+  <h2>Order parameter and response</h2>
+  <p class="prose">Near T<sub>c</sub> the self-consistency equation can be expanded, tanh x ≈ x − x³/3, giving m<sub>0</sub> ≈ ±<span class="rad"><span class="rs">√</span><span class="rc">3</span></span> (T/T<sub>c</sub>)<sup>3/2</sup> [(T<sub>c</sub> − T)/T]<sup>1/2</sup>, so β = 1/2. At T = T<sub>c</sub> the same expansion gives m(T<sub>c</sub>, H) ≈ sign(H)(3β<sub>c</sub>|H|)<sup>1/3</sup>, so δ = 3. Differentiating the self-consistency equation gives the susceptibility</p>
+  <div class="eq">χ(T, 0) = 1/[k<sub>B</sub>T cosh²(T<sub>c</sub>m<sub>0</sub>/T) − k<sub>B</sub>T<sub>c</sub>] → Γ<sup>±</sup>|T − T<sub>c</sub>|<sup>−1</sup>,  Γ<sup>+</sup> = 1/k<sub>B</sub>,  Γ<sup>−</sup> = 1/(2k<sub>B</sub>)</div>
+  <p class="prose">so γ = 1 on both sides, with the universal amplitude ratio Γ<sup>+</sup>/Γ<sup>−</sup> = 2. The energy is ε(T, 0) = −(Jz/2)m<sub>0</sub>², zero above T<sub>c</sub>, so the specific heat jumps from 3k<sub>B</sub>/2 to 0 at T<sub>c</sub>: a discontinuity rather than a divergence, α = 0.</p>
+  <div class="figs">
+    <figure><figcaption><b>Spontaneous magnetization m<sub>0</sub>(T)</b>Solid: stable solutions ±m<sub>0</sub>. Dashed: the unstable m = 0 below T<sub>c</sub>.</figcaption><canvas id="o1"></canvas></figure>
+    <figure><figcaption><b>m<sub>0</sub> ∝ (T<sub>c</sub> − T)<sup>β</sup></b>Log–log. Dashed: <span class="rad"><span class="rs">√</span><span class="rc">3</span></span> [(T<sub>c</sub> − T)/T<sub>c</sub>]<sup>1/2</sup>, slope β = 1/2.</figcaption><canvas id="o2"></canvas></figure>
+    <figure><figcaption><b>m(T, H) against H</b>For T/T<sub>c</sub> = 0.8 (blue), 0.92, 1 and 1.2. Below T<sub>c</sub> the equilibrium m jumps at H = 0 (thin lines: metastable branches).</figcaption><canvas id="o3"></canvas></figure>
+    <figure><figcaption><b>m(T, H) against T/T<sub>c</sub> for several fields</b>H = 0 (blue, with both signs), ±0.01, ±0.1 and ±1 (in units of J). Any field removes the transition.</figcaption><canvas id="o4"></canvas></figure>
+    <figure><figcaption><b>m(T<sub>c</sub>, H) ∝ |H|<sup>1/δ</sup></b>Log–log. Dashed: slope 1/δ = 1/3.</figcaption><canvas id="o5"></canvas></figure>
+    <figure><figcaption><b>f(T, H) against H</b>For T/T<sub>c</sub> = 0.8 (blue), 0.92, 1 and 1.2. Below T<sub>c</sub> there is a cusp at H = 0, where ∂f/∂H = −m jumps.</figcaption><canvas id="o6"></canvas></figure>
+    <figure><figcaption><b>Susceptibility χ(T, 0)</b>Log scale, against T/T<sub>c</sub>.</figcaption><canvas id="o7"></canvas></figure>
+    <figure><figcaption><b>χ ∝ |T − T<sub>c</sub>|<sup>−γ</sup></b>Log–log against |T − T<sub>c</sub>|/T<sub>c</sub>. Above T<sub>c</sub> (blue) and below (red); dashed lines Γ<sup>±</sup>|T − T<sub>c</sub>|<sup>−1</sup>, a factor 2 apart.</figcaption><canvas id="o8"></canvas></figure>
+    <figure><figcaption><b>Energy ε(T, 0) and specific heat c(T, 0)</b>ε = −(Jz/2)m<sub>0</sub>² (blue) and c = dε/dT (red), which jumps from 3/2 to 0 at T<sub>c</sub>.</figcaption><canvas id="o9"></canvas></figure>
+  </div>
+</section>
+
+<section>
+  <h2>Landau theory</h2>
+  <p class="prose">The mean-field exponents all come from Taylor expansions around T<sub>c</sub>, where m is small. Landau’s approach expands the free energy itself in powers of the order parameter. With ln cosh x = x²/2 − x⁴/12 + …, the mean-field f becomes</p>
+  <div class="eq">f ≈ f<sub>0</sub> − Hm + a<sub>2</sub>(T − T<sub>c</sub>)m² + a<sub>4</sub>m⁴,  f<sub>0</sub> = −k<sub>B</sub>T ln 2,  a<sub>2</sub> = k<sub>B</sub>/2,  a<sub>4</sub> = k<sub>B</sub>T/12</div>
+  <p class="prose">f<sub>0</sub> is the entropy of 2<sup>N</sup> configurations. The coefficient of m is set by the field, the m² coefficient changes sign at T<sub>c</sub>, and the m⁴ coefficient stays positive. Minimizing, −H + 2a<sub>2</sub>(T − T<sub>c</sub>)m + 4a<sub>4</sub>m³ = 0, gives m<sub>0</sub> = ±<span class="rad"><span class="rs">√</span><span class="rc">a<sub>2</sub>(T<sub>c</sub> − T)/(2a<sub>4</sub>)</span></span> = ±<span class="rad"><span class="rs">√</span><span class="rc">3/T<sub>c</sub></span></span> (T<sub>c</sub> − T)<sup>1/2</sup>, χ = 1/[2a<sub>2</sub>(T − T<sub>c</sub>) + 12a<sub>4</sub>m<sub>0</sub>²], m(T<sub>c</sub>, H) = sign(H)(3β<sub>c</sub>|H|)<sup>1/3</sup>, and f = f<sub>0</sub> − (3/4T<sub>c</sub>)(T − T<sub>c</sub>)² below T<sub>c</sub>, so c = −T ∂²f/∂T² jumps to 3k<sub>B</sub>/2. Every exponent is recovered, even though the expansion loses the details far from T<sub>c</sub>.</p>
+  <div class="figs">
+    <figure><figcaption><b>β(f − f<sub>0</sub>) against m</b>For T &gt; T<sub>c</sub> (T = 1.2T<sub>c</sub>), T = T<sub>c</sub> and T &lt; T<sub>c</sub> (0.8T<sub>c</sub>) at H = 0. Solid: mean field. Dashed: Landau. Below T<sub>c</sub>, m = 0 becomes a local maximum.</figcaption><canvas id="l1"></canvas></figure>
+    <figure><figcaption><b>m<sub>0</sub>(T): Landau against mean field</b>Solid: mean field. Dashed: Landau, ±<span class="rad"><span class="rs">√</span><span class="rc">3/T<sub>c</sub></span></span> (T<sub>c</sub> − T)<sup>1/2</sup>, tangent at T<sub>c</sub> and wrong far from it.</figcaption><canvas id="l2"></canvas></figure>
+  </div>
+  <p class="prose" style="margin-top:18px">The sketch below shows f − f<sub>0</sub> = −Hm + a<sub>2</sub>(T − T<sub>c</sub>)m² + a<sub>4</sub>m⁴ for H &lt; 0, H = 0 and H &gt; 0 (rows) and T &lt; T<sub>c</sub>, T = T<sub>c</sub> and T &gt; T<sub>c</sub> (columns), with a ball at the global minimum. Down the left column the ball jumps from one well to the other: a first-order transition at H = 0. Along the middle row the two wells merge continuously: a second-order transition at T<sub>c</sub>.</p>
+  <figure style="margin-top:14px"><canvas id="grid9" aria-label="Landau free energy for three fields and three temperatures"></canvas></figure>
+</section>
+
+<section>
+  <h2>General Landau theory: the φ⁴ theory</h2>
+  <p class="prose">If the free energy is analytic near the critical point, it can be expanded in a general order parameter φ, which is defined implicitly by minimizing f, so it is not an independent variable like T and H: f(T, H; φ) = Σ<sub>k</sub> α<sub>k</sub>(T, H)φ<sup>k</sup>. At H = 0 the up–down symmetry f(φ) = f(−φ) forbids odd powers, and the simplest form describing a continuous transition is a fourth-order polynomial. Expanding the coefficients to leading order around (T<sub>c</sub>, 0):</p>
+  <div class="eq">f(T, H; φ) = α̃<sub>0</sub> + α̃<sub>1</sub>Hφ + α̃<sub>2</sub>(T − T<sub>c</sub>)φ² + α̃<sub>4</sub>φ⁴</div>
+  <p class="prose">α̃<sub>0</sub> is the entropic part, α̃<sub>1</sub> = −1, α̃<sub>2</sub> &gt; 0 so the φ² coefficient changes sign at T<sub>c</sub>, and α̃<sub>4</sub> &gt; 0 keeps f bounded. Any system described this way has α = 0, β = 1/2, γ = 1 and δ = 3. Try the coefficients:</p>
+  <div class="two2">
+    <div>
+      <div class="sl"><label for="gR">r = α̃<sub>2</sub>(T − T<sub>c</sub>)</label><output id="gRo"></output><input type="range" id="gR" min="-1" max="1" step="0.01" value="-0.5"></div>
+      <div class="sl"><label for="gH">H (enters as −Hφ)</label><output id="gHo"></output><input type="range" id="gH" min="-0.4" max="0.4" step="0.005" value="0"></div>
+      <div class="sl"><label for="gU">u = α̃<sub>4</sub></label><output id="gUo"></output><input type="range" id="gU" min="0.1" max="2" step="0.01" value="0.5"></div>
+      <dl class="readouts" id="gRead"></dl>
+    </div>
+    <figure style="margin:0"><figcaption><b>f(φ) − α̃<sub>0</sub> = −Hφ + rφ² + uφ⁴</b>Dots mark the extrema: filled for minima, open for the maximum.</figcaption><canvas id="gC"></canvas></figure>
+  </div>
+</section>
+
+<section>
+  <h2>Successes and limits</h2>
+  <p class="prose">Mean-field theory predicts a second-order transition at a finite T<sub>c</sub> in zero field, which is correct for d &gt; 1, and a line of first-order transitions at H = 0 for T &lt; T<sub>c</sub> ending at the critical point. Its T<sub>c</sub> grows with J and z, which is qualitatively right, and like p<sub>c</sub> in percolation T<sub>c</sub> depends on lattice details. Its exponents and the ratio Γ<sup>+</sup>/Γ<sup>−</sup> = 2 do not depend on J or z, so they are universal. But by neglecting fluctuations it predicts the same exponents in every dimension, and a transition even in d = 1. The exact values differ below four dimensions:</p>
+  <div class="tbl"><table aria-label="Critical exponents">
+    <thead><tr><th>Exponent</th><th>Definition</th><th style="text-align:right">Mean field / Landau</th><th style="text-align:right">2D Ising (exact)</th><th style="text-align:right">3D Ising (numerical)</th></tr></thead>
+    <tbody>
+      <tr><td><b>α</b></td><td>c ∝ |T − T<sub>c</sub>|<sup>−α</sup></td><td class="num">0 (jump)</td><td class="num">0 (logarithmic)</td><td class="num">≈ 0.110</td></tr>
+      <tr><td><b>β</b></td><td>m<sub>0</sub> ∝ (T<sub>c</sub> − T)<sup>β</sup></td><td class="num">1/2</td><td class="num">1/8</td><td class="num">≈ 0.326</td></tr>
+      <tr><td><b>γ</b></td><td>χ ∝ |T − T<sub>c</sub>|<sup>−γ</sup></td><td class="num">1</td><td class="num">7/4</td><td class="num">≈ 1.237</td></tr>
+      <tr><td><b>δ</b></td><td>m(T<sub>c</sub>, H) ∝ |H|<sup>1/δ</sup></td><td class="num">3</td><td class="num">15</td><td class="num">≈ 4.79</td></tr>
+    </tbody></table></div>
+</section>
+
+<section id="references">
+  <h2>References</h2>
+  <div class="keyref"><p class="prose" style="margin:0"><b>Key reference.</b> K. Christensen and N. R. Moloney, <i>Complexity and Criticality</i>, Imperial College Press, London (2005), Chapter 2.</p></div>
+  <ol class="refs">
+    <li>P. Weiss, “L’hypothèse du champ moléculaire et la propriété ferromagnétique,” <i>J. Phys. Theor. Appl.</i> <b>6</b>, 661 (1907).</li>
+    <li>L. D. Landau, “On the theory of phase transitions,” <i>Zh. Eksp. Teor. Fiz.</i> <b>7</b>, 19 (1937).</li>
+    <li>L. Onsager, “Crystal statistics. I. A two-dimensional model with an order-disorder transition,” <i>Phys. Rev.</i> <b>65</b>, 117 (1944).</li>
+    <li>N. Goldenfeld, <i>Lectures on Phase Transitions and the Renormalization Group</i>, Addison-Wesley (1992).</li>
+    <li>A. Pelissetto and E. Vicari, “Critical phenomena and renormalization-group theory,” <i>Phys. Rep.</i> <b>368</b>, 549 (2002). Numerical 3D Ising exponents.</li>
+  </ol>
+</section>
+
+<footer>
+  All curves are computed from the mean-field equations and their Landau expansion; nothing here is simulated.
+  <p style="margin-top:14px">Lecture notes by Sang Hoon Lee. Created by Claude Opus 5.5.</p>
+</footer>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = id => document.getElementById(id);
+const C = {};
+function readColors(){
+  const cs=getComputedStyle(document.documentElement);
+  ['paper','panel','ink','muted','rule','grid','accent','crit','l16','l32','l64','l128','l256'].forEach(k=>C[k]=cs.getPropertyValue('--'+k).trim());
+}
+function hexRgb(h){ h=h.replace('#',''); if (h.length===3) h=h.split('').map(c=>c+c).join(''); const v=parseInt(h,16); return [(v>>16)&255,(v>>8)&255,v&255]; }
+const f3=(v,d=3)=>isFinite(v)?v.toFixed(d):'–';
+function linReg(xs,ys){
+  const n=xs.length; if (n<2) return null;
+  let mx=0,my=0; for (let i=0;i<n;i++){mx+=xs[i];my+=ys[i];} mx/=n; my/=n;
+  let sxx=0,sxy=0; for (let i=0;i<n;i++){ sxx+=(xs[i]-mx)**2; sxy+=(xs[i]-mx)*(ys[i]-my); }
+  const slope=sxy/sxx, icpt=my-slope*mx;
+  let se=NaN; if (n>2){ let r=0; for (let i=0;i<n;i++) r+=(ys[i]-icpt-slope*xs[i])**2; se=Math.sqrt(r/(n-2)/sxx); }
+  return {slope,icpt,se};
+}
+
+function richParts(s){ const out=[]; let i=0, buf=''; const push=(t,m)=>{ if (t) out.push({t,m}); };
+  while (i<s.length){ const ch=s[i];
+    if ((ch==='_'||ch==='^') && i+1<s.length){ push(buf,0); buf=''; const m=ch==='_'?1:2; let t;
+      if (s[i+1]==='{'){ const j=s.indexOf('}',i+2); t=s.slice(i+2,j<0?s.length:j); i=j<0?s.length:j+1; }
+      else { t=String.fromCodePoint(s.codePointAt(i+1)); i+=1+t.length; }
+      push(t,m); }
+    else { buf+=ch; i++; } }
+  push(buf,0); return out; }
+function drawRich(ctx,s,x,y){
+  const parts=richParts(String(s)); if (parts.length===1 && parts[0].m===0){ ctx.fillText(s,x,y); return; }
+  const font=ctx.font, mm=font.match(/(\d+(?:\.\d+)?)px/), px=mm?+mm[1]:11, small=font.replace(/(\d+(?:\.\d+)?)px/,(px*0.72).toFixed(1)+'px'), al=ctx.textAlign;
+  let w=0; parts.forEach(p=>{ ctx.font=p.m?small:font; p.w=ctx.measureText(p.t).width; w+=p.w; });
+  let x0= al==='center' ? x-w/2 : (al==='right'||al==='end') ? x-w : x;
+  ctx.textAlign='left';
+  parts.forEach(p=>{ ctx.font=p.m?small:font; ctx.fillText(p.t,x0,y+(p.m===1?px*0.32:p.m===2?-px*0.38:0)); x0+=p.w; });
+  ctx.textAlign=al; ctx.font=font; }
+/* ---------- plotting ---------- */
+const SUP={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+const supNum = n => String(n).split('').map(c=>SUP[c]||c).join('');
+function niceStep(range,n){ const raw=range/n, p=Math.pow(10,Math.floor(Math.log10(raw))), f=raw/p; return (f<1.5?1:f<3?2:f<7?5:10)*p; }
+function fmtTick(v,step){ const dec=Math.max(0,-Math.floor(Math.log10(step)+1e-9)); return (Math.abs(v)<step/2?0:v).toFixed(Math.min(dec,4)); }
+function plot(cv,o){
+  const dpr=window.devicePixelRatio||1, W=cv.clientWidth, H=cv.clientHeight; if (!W||!H) return;
+  const pw_=Math.round(W*dpr), ph_=Math.round(H*dpr); if (cv.width!==pw_||cv.height!==ph_){cv.width=pw_; cv.height=ph_;}
+  const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,H);
+  const m={l:54,r:12,t:10,b:36}, pw=W-m.l-m.r, ph=H-m.t-m.b;
+  const fx=o.logx?Math.log10:v=>v, fy=o.logy?Math.log10:v=>v;
+  const series=o.series||[];
+  let [x0,x1]=o.x||[Infinity,-Infinity];
+  if (!o.x){ series.forEach(s=>s.pts.forEach(p=>{ if (isFinite(p[0])&&(!o.logx||p[0]>0)){x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);} })); }
+  let y0=Infinity,y1=-Infinity;
+  if (o.y){ [y0,y1]=o.y; }
+  else {
+    series.forEach(s=>{ if (s.noScale) return; s.pts.forEach(p=>{ const y=p[1]; if (p[0]>=x0&&p[0]<=x1&&isFinite(y)&&(!o.logy||y>0)){y0=Math.min(y0,y);y1=Math.max(y1,y);} }); });
+    if (!isFinite(y0)){ y0=o.logy?0.1:0; y1=o.logy?10:1; }
+    if (o.logy){ y0/=1.3; y1*=1.3; } else { const pad=(y1-y0||1)*0.06; y0 = o.zeroY ? Math.min(0,y0) : y0-pad; y1+=pad; }
+  }
+  if (!isFinite(x0)||!isFinite(x1)){ x0=o.logx?1:0; x1=o.logx?10:1; }
+  if (x0===x1){x0-=1;x1+=1;}
+  const X0=fx(x0),X1=fx(x1),Y0=fy(y0),Y1=fy(y1);
+  const X=v=>m.l+(fx(v)-X0)/(X1-X0)*pw, Y=v=>m.t+ph-(fy(v)-Y0)/(Y1-Y0)*ph;
+  cv._xy=(a,b)=>[X(a),Y(b)]; cv._inv = px => { const t=(px-m.l)/pw; const v=X0+t*(X1-X0); return o.logx?Math.pow(10,v):v; };
+  ctx.font='11px "Public Sans", system-ui, sans-serif'; ctx.lineWidth=1;
+  function ticks(lo,hi,log,custom){
+    if (custom) return custom.filter(v=>v>=lo*0.999&&v<=hi*1.001).map(v=>[v,(o.xfmt||String)(v)]);
+    if (log){
+      if (!(lo>0)||!isFinite(hi)) return [];
+      const a=Math.floor(Math.log10(lo)), b=Math.ceil(Math.log10(hi)), out=[];
+      if (b-a>40) return [];
+      const mults = (b-a)<=1 ? [1,1.5,2,3,5,7] : (b-a)<=2 ? [1,2,5] : [1];
+      const stepK = (b-a)>6 ? 2 : 1;
+      for (let k=a;k<=b;k+=1) if (((k%stepK)+stepK)%stepK===0) mults.forEach(mu=>{ const v=mu*Math.pow(10,k); if (v>=lo&&v<=hi) out.push([v, mu===1 ? (k>=0&&k<=3 ? String(Math.pow(10,k)) : '10'+supNum(k)) : (k>=0? String(v): String(+v.toPrecision(2)))]); });
+      return out;
+    }
+    const st=niceStep(hi-lo,5), out=[];
+    if (!(st>0)||!isFinite(lo)||!isFinite(hi)) return out;
+    for (let v=Math.ceil(lo/st)*st; v<=hi+st*1e-6; v+=st) out.push([v,fmtTick(v,st)]);
+    return out;
+  }
+  ctx.fillStyle=C.panel; ctx.fillRect(m.l,m.t,pw,ph);
+  ctx.strokeStyle=C.grid; ctx.fillStyle=C.muted;
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  ticks(x0,x1,o.logx,o.xticks).forEach(([v,l])=>{ const px=Math.round(X(v))+.5; ctx.beginPath(); ctx.moveTo(px,m.t); ctx.lineTo(px,m.t+ph); ctx.stroke(); ctx.fillText(l,px,m.t+ph+5); });
+  ctx.textAlign='right'; ctx.textBaseline='middle';
+  ticks(y0,y1,o.logy).forEach(([v,l])=>{ const py=Math.round(Y(v))+.5; ctx.beginPath(); ctx.moveTo(m.l,py); ctx.lineTo(m.l+pw,py); ctx.stroke(); ctx.fillText(l,m.l-6,py); });
+  ctx.strokeStyle=C.rule; ctx.strokeRect(m.l+.5,m.t+.5,pw-1,ph-1);
+  ctx.save(); ctx.beginPath(); ctx.rect(m.l,m.t,pw,ph); ctx.clip();
+  (o.vlines||[]).forEach(v=>{ if (v.x<x0||v.x>x1) return; ctx.strokeStyle=v.color; ctx.lineWidth=v.width||1; ctx.setLineDash(v.dash||[]); const px=X(v.x); ctx.beginPath(); ctx.moveTo(px,m.t); ctx.lineTo(px,m.t+ph); ctx.stroke(); ctx.setLineDash([]); if (v.label){ ctx.fillStyle=v.color; ctx.textAlign='left'; ctx.textBaseline='top'; drawRich(ctx,v.label,px+4,m.t+4); } });
+  series.forEach(s=>{
+    ctx.strokeStyle=s.color; ctx.fillStyle=s.color; ctx.lineWidth=s.width||1.6; ctx.setLineDash(s.dash||[]); ctx.globalAlpha=s.alpha||1;
+    if (s.dots){ s.pts.forEach(p=>{ if (!isFinite(p[1])||(o.logy&&p[1]<=0)) return; ctx.beginPath(); ctx.arc(X(p[0]),Y(p[1]),s.r||4,0,7); ctx.fill(); }); }
+    else { ctx.beginPath(); let pen=false; s.pts.forEach(p=>{ const ok=isFinite(p[1])&&isFinite(p[0])&&(!o.logy||p[1]>0)&&(!o.logx||p[0]>0); if (!ok){pen=false;return;} const px=X(p[0]),py=Y(p[1]); if (pen) ctx.lineTo(px,py); else {ctx.moveTo(px,py); pen=true;} }); ctx.stroke(); }
+    ctx.setLineDash([]); ctx.globalAlpha=1;
+  });
+  ctx.restore();
+  ctx.fillStyle=C.muted; ctx.textAlign='center'; ctx.textBaseline='bottom';
+  if (o.xlabel) drawRich(ctx,o.xlabel, m.l+pw/2, H-1);
+  if (o.ylabel){ ctx.save(); ctx.translate(11,m.t+ph/2); ctx.rotate(-Math.PI/2); ctx.textBaseline='middle'; drawRich(ctx,o.ylabel,0,0); ctx.restore(); }
+}
+
+
+
+
+
+/* ---------- mean-field equations (k_B = J = 1, so Tc = z) ---------- */
+let Z=4;
+const fMF=(m,T,H,Tc)=>Tc*m*m/2-T*Math.log(2*Math.cosh((Tc*m+H)/T));
+const dfMF=(m,T,H,Tc)=>Tc*(m-Math.tanh((Tc*m+H)/T));
+const fLan=(m,T,H,Tc)=>-T*Math.LN2-H*m+0.5*(T-Tc)*m*m+(T/12)*m**4;
+function roots(T,H,Tc){
+  const g=m=>Math.tanh((Tc*m+H)/T)-m, out=[], n=4000;
+  let a=-1.0000001, ga=g(a);
+  for (let i=1;i<=n;i++){ const b=-1.0000001+2.0000002*i/n, gb=g(b);
+    if (ga===0) out.push(a); else if (ga*gb<0){ let lo=a, hi=b; for (let k=0;k<60;k++){ const mid=(lo+hi)/2; if (g(lo)*g(mid)<=0) hi=mid; else lo=mid; } out.push((lo+hi)/2); }
+    a=b; ga=gb; }
+  return out.map(m=>({m, stable: 1-(Tc/T)*(1/Math.cosh((Tc*m+H)/T))**2 > 0, f:fMF(m,T,H,Tc)}));
+}
+function mEq(T,H,Tc){ let m=H>0?1:H<0?-1:1; for (let i=0;i<4000;i++){ const n=Math.tanh((Tc*m+H)/T); if (Math.abs(n-m)<1e-13){ m=n; break; } m=n; } return m; }
+function m0(t){ // reduced temperature t = T/Tc
+  if (t>=1) return 0; let lo=1e-12, hi=1; const g=m=>Math.tanh(m/t)-m; for (let i=0;i<100;i++){ const mid=(lo+hi)/2; if (g(mid)>0) lo=mid; else hi=mid; } return (lo+hi)/2; }
+const chi0=t=>{ const m=m0(t); return 1/(t*Math.cosh(m/t)**2-1); }; // in units of 1/(k_B Tc) times Tc ... per Tc=1
+function mOns(t){ const T=t*2.269185314213022; if (T>=2.269185314213022) return 0; return Math.pow(1-Math.pow(Math.sinh(2/T),-4),1/8); }
+
+/* ---------- hero ---------- */
+const S={t:0.8,H:0,mode:'local',ball:0.8,trail:[],sweep:null};
+function tc(){ return Z; }
+/* ---------- conceptual illustration ---------- */
+const IL={nb:[], hist:[], last:0, it:{m:0.3, seq:[0.3]}};
+function eqM(){ const Tc=tc(), T=S.t*Tc, m=mEq(T,S.H,Tc); return (S.H===0&&S.t<1)?Math.abs(m):m; }
+function latticeSites(){
+  const sites=[]; let nb=[];
+  if (Z===2){ for (let x=-5;x<=5;x++) sites.push([x,0]); }
+  else if (Z===6){ for (let j=-4;j<=4;j++) for (let i=-7;i<=7;i++){ const x=i+j/2, y=j*Math.sqrt(3)/2; if (Math.abs(x)<=4.6) sites.push([x,y]); } }
+  else { for (let y=-4;y<=4;y++) for (let x=-4;x<=4;x++) sites.push([x,y]); }
+  const c=sites.findIndex(p=>Math.abs(p[0])<1e-9&&Math.abs(p[1])<1e-9);
+  const d2=(a,b)=>(a[0]-b[0])**2+(a[1]-b[1])**2;
+  const isNb=(a,b)=>{ const d=d2(a,b); return Z===8 ? (d>0.5&&d<2.1) : Math.abs(d-1)<1e-6; };
+  sites.forEach((p,k)=>{ if (k!==c && isNb(p,sites[c])) nb.push(k); });
+  const bonds=[]; for (let a=0;a<sites.length;a++) for (let b=a+1;b<sites.length;b++) if (isNb(sites[a],sites[b])) bonds.push([a,b]);
+  return {sites,c,nb,bonds};
+}
+let LAT=null, LATZ=0;
+function sampleNb(){ if (!LAT||LATZ!==Z){ LAT=latticeSites(); LATZ=Z; IL.hist=[]; } const m=eqM(); IL.s=LAT.sites.map(()=>Math.random()<(1+m)/2?1:-1); IL.nb=LAT.nb.map(k=>IL.s[k]); const h=IL.nb.reduce((a,b)=>a+b,0)+S.H; IL.hist.push(h); if (IL.hist.length>120) IL.hist.shift(); }
+function arrowSpin(ctx,x,y,r,val,col,alpha){
+  ctx.globalAlpha=alpha; ctx.fillStyle=C.panel; ctx.strokeStyle=C.ink; ctx.lineWidth=Math.max(0.8,r*0.1); ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fill(); ctx.stroke();
+  if (Math.abs(val)>0.02){ const L=0.8*r*val; ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=Math.max(1.4,r*0.18); ctx.beginPath(); ctx.moveTo(x,y+L); ctx.lineTo(x,y-L*0.5); ctx.stroke();
+    const hw=r*0.36, s=Math.sign(val); ctx.beginPath(); ctx.moveTo(x,y-L); ctx.lineTo(x-hw,y-L+s*hw*1.25); ctx.lineTo(x+hw,y-L+s*hw*1.25); ctx.closePath(); ctx.fill(); }
+  ctx.globalAlpha=1; }
+function drawIll(){
+  const cv=$('ill'); const W=cv.clientWidth, Hh=cv.clientHeight; if (!W||!LAT) return; const dpr=window.devicePixelRatio||1;
+  if (cv.width!==Math.round(W*dpr)||cv.height!==Math.round(Hh*dpr)){ cv.width=Math.round(W*dpr); cv.height=Math.round(Hh*dpr); }
+  const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.fillStyle=C.panel; ctx.fillRect(0,0,W,Hh);
+  const m=eqM(), pw=W/3, top=Math.max(34,W/26), bot=Math.max(26,W/40), ah=Hh-top-bot;
+  const xs=LAT.sites.map(p=>p[0]), ys=LAT.sites.map(p=>p[1]), xr=Math.max(...xs)-Math.min(...xs)+1, yr=Math.max(...ys)-Math.min(...ys)+1;
+  const sp=Math.min((pw-16)/xr, ah/yr), r=sp*0.36, nbSet=new Set(LAT.nb);
+  const col=v=>v>=0?C.accent:C.crit;
+  const titles=['(a) Ising: actual neighbors','(b) average + fluctuation','(c) mean field: average only'];
+  for (let p=0;p<3;p++){
+    const cx=pw*(p+0.5), cy=top+ah/2, X=k=>cx+LAT.sites[k][0]*sp, Y=k=>cy+LAT.sites[k][1]*sp;
+    ctx.font=`600 ${Math.max(11,Math.round(W/72))}px "Public Sans", system-ui, sans-serif`; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillStyle=C.ink; ctx.fillText(titles[p],cx,6);
+    ctx.font=`${Math.max(10,Math.round(W/95))}px "Public Sans", system-ui, sans-serif`; ctx.fillStyle=C.muted;
+    if (p===1) drawRich(ctx,`m = ${m.toFixed(3)}; drop (s_i − m)(s_j − m)`,cx,8+Math.max(13,W/60));
+    if (p===2) drawRich(ctx,'every spin replaced by m',cx,8+Math.max(13,W/60));
+    if (p) { ctx.strokeStyle=C.rule; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(pw*p,10); ctx.lineTo(pw*p,Hh-10); ctx.stroke(); }
+    if (p===2){ ctx.fillStyle=C.grid; ctx.fillRect(cx-xr*sp/2-4,cy-yr*sp/2-4,xr*sp+8,yr*sp+8); }
+    ctx.strokeStyle=C.rule; ctx.lineWidth=1; ctx.beginPath(); LAT.bonds.forEach(([a,b])=>{ ctx.moveTo(X(a),Y(a)); ctx.lineTo(X(b),Y(b)); }); ctx.stroke();
+    ctx.strokeStyle=C.accent; ctx.lineWidth=Math.max(1.5,r*0.22); ctx.beginPath(); LAT.nb.forEach(k=>{ ctx.moveTo(X(LAT.c),Y(LAT.c)); ctx.lineTo(X(k),Y(k)); }); ctx.stroke();
+    LAT.sites.forEach((q,k)=>{ if (k===LAT.c) return; const isN=nbSet.has(k), sv=IL.s[k], x=X(k), y=Y(k), fade=isN?1:0.55;
+      if (p===0) arrowSpin(ctx,x,y,r,sv,col(sv),fade);
+      else { arrowSpin(ctx,x,y,r,m,C.muted,p===2?0.8:fade);
+        if (p===1 && isN){ const d=sv-m; ctx.strokeStyle=col(d); ctx.lineWidth=Math.max(2,r*0.28); ctx.beginPath(); ctx.moveTo(x+r*1.25,y); ctx.lineTo(x+r*1.25,y-0.9*r*d); ctx.stroke(); } }
+      if (isN){ ctx.strokeStyle=C.accent; ctx.lineWidth=Math.max(1.5,r*0.2); ctx.beginPath(); ctx.arc(x,y,r+2,0,7); ctx.stroke(); } });
+    const xc=X(LAT.c), yc=Y(LAT.c), rc=r*1.25;
+    ctx.fillStyle=C.panel; ctx.strokeStyle=C.ink; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(xc,yc,rc,0,7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=C.ink; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font=`600 ${Math.max(9,Math.round(rc*1.1))}px "Public Sans", system-ui, sans-serif`; drawRich(ctx,'s_i',xc,yc);
+    const h = p===0 ? IL.nb.reduce((a,b)=>a+b,0)+S.H : Z*m+S.H;
+    ctx.font=`${Math.max(11,Math.round(W/80))}px "Public Sans", system-ui, sans-serif`; ctx.textBaseline='bottom'; ctx.fillStyle=p===0?C.crit:p===2?C.accent:C.muted;
+    if (p===0) drawRich(ctx,`field J Σ s_j + H = ${h.toFixed(2)}`,cx,Hh-6);
+    else if (p===1) drawRich(ctx,'s_j = m + (s_j − m)',cx,Hh-6);
+    else drawRich(ctx,`effective field Jzm + H = ${h.toFixed(2)}`,cx,Hh-6);
+  }
+}
+function drawHloc(){
+  const m=eqM(), hm=Z*m+S.H, n=IL.hist.length;
+  plot($('hloc'),{x:[0,120],y:[-Z-1.8,Z+1.8],series:[{color:C.crit,width:1.2,pts:IL.hist.map((v,i)=>[i,v])},{dots:true,r:2.5,color:C.crit,pts:IL.hist.map((v,i)=>[i,v])},{color:C.accent,width:2.4,pts:[[0,hm],[120,hm]]}],xlabel:'time (updates of the neighbors)',ylabel:'field on s_i'});
+}
+function drawIt(){
+  const Tc=tc(), T=S.t*Tc, H=S.H, seq=IL.it.seq, mf=mEq(T,H,Tc);
+  const ms=Array.from({length:201},(_,i)=>-1+i/100);
+  const cob=[]; for (let i=0;i<seq.length-1;i++){ cob.push([seq[i], i===0?0:seq[i]],[seq[i],seq[i+1]],[seq[i+1],seq[i+1]]); }
+  plot($('itC'),{x:[-1,1],y:[-1,1],series:[{color:C.muted,dash:[6,4],width:1.1,pts:[[-1,-1],[1,1]]},{color:C.accent,width:2,pts:ms.map(x=>[x,Math.tanh((Tc*x+H)/T)])},{color:C.crit,width:1.3,pts:cob},{dots:true,r:4,color:C.crit,pts:[[seq[seq.length-1],seq[seq.length-1]]]}],xlabel:'guess m',ylabel:'⟨s⟩ = tanh(βh)'});
+  const mc=seq[seq.length-1], h=Tc*mc+H;
+  $('itRead').innerHTML=`<dt>Step</dt><dd>${seq.length-1}</dd><dt>Current guess m</dt><dd>${mc.toFixed(5)}</dd><dt>Effective field h = Jzm + H</dt><dd>${h.toFixed(4)}</dd><dt>Response ⟨s⟩ = tanh(h/T)</dt><dd>${Math.tanh(h/T).toFixed(5)}</dd><dt>Mean-field solution</dt><dd>${(H===0&&S.t<1)?'±'+Math.abs(mf).toFixed(5):mf.toFixed(5)}</dd>`;
+}
+function itStep(n){ const Tc=tc(), T=S.t*Tc; for (let k=0;k<n;k++){ const m=IL.it.seq[IL.it.seq.length-1]; IL.it.seq.push(Math.tanh((Tc*m+S.H)/T)); } drawIt(); }
+
+function drawHero(){
+  const Tc=tc(), T=S.t*Tc, H=S.H, rs=roots(T,H,Tc), meq=mEq(T,H,Tc);
+  $('tOut').textContent=S.t.toFixed(3); $('hOut').textContent=H.toFixed(3); $('rTc').textContent=Tc;
+  document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('primary',Math.abs(+b.dataset.t-S.t)<1e-9));
+  const ms=Array.from({length:401},(_,i)=>-1.2+i*2.4/400);
+  plot($('sce'),{x:[-1.2,1.2],y:[-1.2,1.2],series:[
+    {color:C.muted,dash:[6,4],width:1.2,pts:[[-1.2,-1.2],[1.2,1.2]]},
+    {color:C.accent,width:2.2,pts:ms.map(m=>[m,Math.tanh((Tc*m+H)/T)])},
+    {dots:true,r:6,color:C.crit,pts:rs.filter(r=>r.stable).map(r=>[r.m,r.m])},
+    {dots:true,r:4,color:C.panel,pts:rs.filter(r=>!r.stable).map(r=>[r.m,r.m])}],xlabel:'m',ylabel:'tanh[(T_c m + H)/T]'});
+  // open dots outline
+  const cv=$('sce'); if (cv._xy){ const ctx=cv.getContext('2d'); ctx.strokeStyle=C.crit; ctx.lineWidth=2; rs.filter(r=>!r.stable).forEach(r=>{ const [x,y]=cv._xy(r.m,r.m); ctx.beginPath(); ctx.arc(x,y,5,0,7); ctx.stroke(); }); }
+  const fm=ms.filter(m=>Math.abs(m)<=1.05).map(m=>[m,fMF(m,T,H,Tc)]), fl=ms.filter(m=>Math.abs(m)<=1.05).map(m=>[m,fLan(m,T,H,Tc)]);
+  const ys=fm.map(p=>p[1]); const lo=Math.min(...ys), hi=Math.max(...ys);
+  plot($('fm'),{x:[-1.05,1.05],y:[lo-0.08*(hi-lo+1e-9),hi+0.08*(hi-lo+1e-9)],series:[{color:C.accent,width:2.2,pts:fm},{color:C.ink,dash:[6,4],width:1.2,pts:fl,noScale:true},{dots:true,r:8,color:C.crit,pts:[[S.ball,fMF(S.ball,T,H,Tc)]]}],xlabel:'m',ylabel:'f(m)'});
+  $('rSol').textContent=rs.map(r=>`${r.m>=0?'+':'−'}${Math.abs(r.m).toFixed(4)}${r.stable?'':' (unstable)'}`).join(', ');
+  $('rM').textContent= (H===0 && S.t<1) ? `±${meq.toFixed(4)} (two equal minima)` : meq.toFixed(4);
+  $('rB').textContent=`m = ${S.ball.toFixed(4)}${Math.abs(S.ball-meq)>1e-3 && !(H===0&&Math.abs(Math.abs(S.ball)-Math.abs(meq))<1e-3) ? ' (metastable)' : ''}`;
+  $('rF').textContent=fMF(S.ball,T,H,Tc).toFixed(4);
+  plot($('trail'),{x:[-1.5,1.5],y:[-1.05,1.05],series:[{color:C.muted,width:1,pts:Array.from({length:301},(_,i)=>{ const h=-1.5+i*0.01; return [h,mEq(T,h,Tc)*(h===0?0:1)]; })},{color:C.crit,width:1.8,pts:S.trail},{dots:true,r:5,color:C.crit,pts:[[H,S.ball]]}],xlabel:'H',ylabel:'m'});
+}
+function stepBall(){
+  const Tc=tc(), T=S.t*Tc;
+  if (S.mode==='global'){ const m=mEq(T,S.H,Tc); S.ball = (S.H===0 && S.t<1) ? Math.sign(S.ball||1)*Math.abs(m) : m; return; }
+  for (let k=0;k<40;k++){ const d=dfMF(S.ball,T,S.H,Tc); S.ball-=0.02*d/Math.max(1,Tc/4); S.ball=Math.max(-1,Math.min(1,S.ball)); }
+}
+function loop(){
+  if (S.sweep){ const sw=S.sweep; sw.k++; const ph=sw.k/240; let h; if (ph<1) h=1-2*ph; else if (ph<2) h=-1+2*(ph-1); else { S.sweep=null; h=S.H; } if (S.sweep){ S.H=Math.round(h*1000)/1000; $('hSl').value=S.H; } }
+  const before=S.ball; stepBall();
+  const last=S.trail[S.trail.length-1];
+  if (!last || Math.abs(last[0]-S.H)>1e-4 || Math.abs(last[1]-S.ball)>1e-4){ S.trail.push([S.H,S.ball]); if (S.trail.length>3000) S.trail.shift(); }
+  drawHero();
+  const now=performance.now(); if (now-IL.last>250){ IL.last=now; sampleNb(); drawIll(); drawHloc(); drawIt(); }
+  requestAnimationFrame(loop);
+}
+
+/* ---------- static charts ---------- */
+const cols=()=>[C.accent,C.l64,C.l16,C.l128];
+function drawMF(){
+  const TG=Array.from({length:400},(_,i)=>0.005+i*(7-0.005)/399);
+  plot($('cmp'),{x:[0,7],y:[-0.02,1.05],series:[
+    {color:C.accent,width:2,pts:TG.map(T=>[T,m0(T/4)])},{color:C.l64,width:2,pts:TG.map(T=>[T,m0(T/2)])},{color:C.ink,width:2,pts:TG.map(T=>[T,mOns(T/2.269185314213022)])}],
+    vlines:[{x:2.269,color:C.ink,dash:[4,4]},{x:4,color:C.accent,dash:[4,4]},{x:2,color:C.l64,dash:[4,4]}],xlabel:'k_BT/J',ylabel:'m_0'});
+  drawPD();
+  const t=Array.from({length:500},(_,i)=>0.002+i*1.998/499), c=cols();
+  plot($('o1'),{x:[0,2],y:[-1.05,1.05],series:[{color:C.accent,width:2.2,pts:t.map(x=>[x,m0(x)])},{color:C.accent,width:2.2,pts:t.map(x=>[x,-m0(x)])},{color:C.accent,width:2.2,pts:[[1,0],[2,0]]},{color:C.crit,dash:[5,4],width:1.6,pts:[[0,0],[1,0]]}],vlines:[{x:1,color:C.crit,dash:[3,4]}],xlabel:'T/T_c',ylabel:'m_0(T)'});
+  const xs=Array.from({length:120},(_,i)=>Math.pow(10,-6+i*6/119));
+  plot($('o2'),{x:[1e-6,1],logx:true,logy:true,series:[{color:C.accent,width:2.2,pts:xs.map(x=>[x,m0(1-x)])},{color:C.ink,dash:[6,4],width:1.2,pts:xs.map(x=>[x,Math.sqrt(3*x)])}],xlabel:'(T_c − T)/T_c',ylabel:'|m_0|'});
+  const HG=Array.from({length:301},(_,i)=>-3+i*0.02), Ts=[0.8,0.92,1,1.2];
+  const s3=[];
+  Ts.forEach((tt,k)=>{ s3.push({color:c[k],width:tt===0.8?2.2:1.6,pts:HG.map(h=>[h,mEq(tt*4,h,4)])}); if (tt<1){ // metastable continuation
+      const up=[], dn=[]; let mu=1, md=-1; for (const h of HG){ for (let i=0;i<400;i++){ mu=Math.tanh((4*mu+h)/(tt*4)); md=Math.tanh((4*md+h)/(tt*4)); } if (mu>0) up.push([h,mu]); if (md<0) dn.push([h,md]); }
+      s3.push({color:c[k],width:0.9,pts:up},{color:c[k],width:0.9,pts:dn}); } });
+  plot($('o3'),{x:[-3,3],y:[-1.05,1.05],series:s3,xlabel:'H (units of J, z = 4)',ylabel:'m(T, H)'});
+  const Hs=[0,0.01,0.1,1], s4=[];
+  Hs.forEach((h,k)=>{ if (h===0){ s4.push({color:c[0],width:2.2,pts:t.map(x=>[x,m0(x)])},{color:c[0],width:2.2,pts:t.map(x=>[x,-m0(x)])}); } else { s4.push({color:c[k],width:1.6,pts:t.map(x=>[x,mEq(x*4,h,4)])},{color:c[k],width:1.6,pts:t.map(x=>[x,mEq(x*4,-h,4)])}); } });
+  plot($('o4'),{x:[0,2],y:[-1.05,1.05],series:s4,xlabel:'T/T_c',ylabel:'m(T, H)'});
+  const hs=Array.from({length:120},(_,i)=>Math.pow(10,-5+i*5/119));
+  plot($('o5'),{x:[1e-5,1],logx:true,logy:true,series:[{color:C.accent,width:2.2,pts:hs.map(h=>[h,mEq(4,h,4)])},{color:C.ink,dash:[6,4],width:1.2,pts:hs.map(h=>[h,Math.pow(3*h/4,1/3)])}],xlabel:'|H| (units of J, z = 4)',ylabel:'m(T_c, H)'});
+  plot($('o6'),{x:[-3,3],series:Ts.map((tt,k)=>({color:c[k],width:tt===0.8?2.2:1.6,pts:HG.map(h=>{ const T=tt*4, m=mEq(T,h,4); return [h,fMF(m,T,h,4)]; })})),xlabel:'H (units of J, z = 4)',ylabel:'f(T, H)'});
+  const tg=t.filter(x=>Math.abs(x-1)>0.002);
+  plot($('o7'),{x:[0,2],logy:true,y:[0.1,1e3],series:[{color:C.accent,width:2.2,pts:tg.map(x=>[x,chi0(x)])}],vlines:[{x:1,color:C.crit,dash:[4,4],label:'T_c'}],xlabel:'T/T_c',ylabel:'T_c χ(T, 0)'});
+  const ds=Array.from({length:120},(_,i)=>Math.pow(10,-5+i*5/119));
+  plot($('o8'),{x:[1e-5,1],logx:true,logy:true,series:[{color:C.accent,width:2.2,pts:ds.map(d=>[d,chi0(1+d)])},{color:C.crit,width:2.2,pts:ds.filter(d=>d<1).map(d=>[d,chi0(1-d)])},{color:C.accent,dash:[6,4],width:1.1,pts:ds.map(d=>[d,1/d])},{color:C.crit,dash:[6,4],width:1.1,pts:ds.map(d=>[d,0.5/d])}],xlabel:'|T − T_c|/T_c',ylabel:'T_c χ(T, 0)'});
+  const eps=x=>-(1/2)*m0(x)**2, cT=x=>{ const h=1e-4; return (eps(x+h)-eps(x-h))/(2*h); };
+  plot($('o9'),{x:[0,2],y:[-0.55,1.6],series:[{color:C.accent,width:2.2,pts:t.map(x=>[x,eps(x)])},{color:C.crit,width:2.2,pts:t.filter(x=>x<0.999).map(x=>[x,cT(x)])},{color:C.crit,width:2.2,pts:[[1.001,0],[2,0]]}],vlines:[{x:1,color:C.muted,dash:[3,4]}],xlabel:'T/T_c',ylabel:'ε/(k_BT_c) (blue), c/k_B (red)'});
+  // Landau
+  const mm=Array.from({length:301},(_,i)=>-1+i/150), L=[[1.2,c[2]],[1,c[1]],[0.8,c[0]]], s5=[];
+  L.forEach(([tt,col])=>{ const T=tt*4; s5.push({color:col,width:2,pts:mm.map(m=>[m,(fMF(m,T,0,4)+T*Math.LN2)/T])},{color:col,dash:[6,4],width:1.3,pts:mm.map(m=>[m,(fLan(m,T,0,4)+T*Math.LN2)/T])}); });
+  plot($('l1'),{x:[-1,1],y:[-0.08,0.5],series:s5,xlabel:'m',ylabel:'β(f − f_0)'});
+  plot($('l2'),{x:[0,1.4],y:[-1.3,1.3],series:[{color:C.accent,width:2.2,pts:t.filter(x=>x<=1.4).map(x=>[x,m0(x)])},{color:C.accent,width:2.2,pts:t.filter(x=>x<=1.4).map(x=>[x,-m0(x)])},{color:C.crit,dash:[6,4],width:1.5,pts:t.filter(x=>x<1).map(x=>[x,Math.sqrt(3*(1-x))])},{color:C.crit,dash:[6,4],width:1.5,pts:t.filter(x=>x<1).map(x=>[x,-Math.sqrt(3*(1-x))])}],xlabel:'T/T_c',ylabel:'m_0(T)'});
+  drawGrid9(); drawGen();
+}
+let pdImg=null, pdZ=0;
+function drawPD(){
+  const cv=$('pd'); const W=cv.clientWidth, Hh=cv.clientHeight; if (!W) return;
+  const dpr=window.devicePixelRatio||1; cv.width=Math.round(W*dpr); cv.height=Math.round(Hh*dpr);
+  const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,Hh);
+  const m={l:52,r:12,t:10,b:38}, pw=W-m.l-m.r, ph=Hh-m.t-m.b, nx=220, ny=140;
+  if (!pdImg || pdZ!==Z){ pdZ=Z; pdImg=document.createElement('canvas'); pdImg.width=nx; pdImg.height=ny; const ic=pdImg.getContext('2d'), im=ic.createImageData(nx,ny);
+    const pos=hexRgb(C.accent), neg=hexRgb(C.crit), mid=hexRgb(C.panel);
+    for (let j=0;j<ny;j++){ const H=1.5-3*(j+0.5)/ny; for (let i=0;i<nx;i++){ const t=2*(i+0.5)/nx, mm=mEq(t*Z,H,Z), a=Math.min(1,Math.abs(mm)), cc=mm>=0?pos:neg, k=4*(j*nx+i); for (let q=0;q<3;q++) im.data[k+q]=Math.round(mid[q]+(cc[q]-mid[q])*a); im.data[k+3]=255; } }
+    ic.putImageData(im,0,0); }
+  ctx.imageSmoothingEnabled=true; ctx.drawImage(pdImg,m.l,m.t,pw,ph);
+  const X=t=>m.l+t/2*pw, Y=h=>m.t+(1.5-h)/3*ph;
+  ctx.strokeStyle=C.ink; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(X(0),Y(0)); ctx.lineTo(X(1),Y(0)); ctx.stroke();
+  ctx.fillStyle=C.ink; ctx.beginPath(); ctx.arc(X(1),Y(0),5,0,7); ctx.fill();
+  ctx.strokeStyle=C.ink; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(X(S.t),Y(S.H),7,0,7); ctx.stroke();
+  ctx.strokeStyle=C.rule; ctx.lineWidth=1; ctx.strokeRect(m.l+.5,m.t+.5,pw-1,ph-1);
+  ctx.font='11px "Public Sans", system-ui, sans-serif'; ctx.fillStyle=C.muted; ctx.textAlign='center'; ctx.textBaseline='top';
+  [0,0.5,1,1.5,2].forEach(t=>ctx.fillText(String(t),X(t),m.t+ph+5)); ctx.textAlign='right'; ctx.textBaseline='middle'; [-1.5,-1,-0.5,0,0.5,1,1.5].forEach(h=>ctx.fillText(String(h),m.l-6,Y(h)));
+  ctx.textAlign='center'; ctx.textBaseline='bottom'; drawRich(ctx,'T/T_c',m.l+pw/2,Hh-1);
+  ctx.save(); ctx.translate(11,m.t+ph/2); ctx.rotate(-Math.PI/2); ctx.textBaseline='middle'; drawRich(ctx,'H (units of J)',0,0); ctx.restore();
+  ctx.fillStyle=C.ink; ctx.textAlign='left'; ctx.textBaseline='bottom'; ctx.fillText('first-order line',X(0.08),Y(0)-6); drawRich(ctx,'(T_c, 0)',X(1)+8,Y(0)-6);
+  cv._inv=(px,py)=>[Math.min(2,Math.max(0.2,(px-m.l)/pw*2)), Math.min(1.5,Math.max(-1.5,1.5-(py-m.t)/ph*3))];
+}
+function drawGrid9(){
+  const cv=$('grid9'), W=cv.clientWidth; if (!W) return; const dpr=window.devicePixelRatio||1; cv.width=Math.round(W*dpr); cv.height=Math.round(W*dpr);
+  const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.fillStyle=C.panel; ctx.fillRect(0,0,W,W);
+  const Ts=[0.8,1,1.2], Hs=[-0.05,0,0.05], lab=['T < T_c','T = T_c','T > T_c'], hl=['H < 0','H = 0','H > 0'], pad=38, cw=(W-pad)/3, chh=(W-pad)/3;
+  ctx.font='600 13px "Public Sans", system-ui, sans-serif'; ctx.fillStyle=C.ink; ctx.textAlign='center'; ctx.textBaseline='middle';
+  lab.forEach((l,i)=>drawRich(ctx,l,pad+cw*(i+0.5),14)); ctx.save(); hl.forEach((l,j)=>{ ctx.save(); ctx.translate(14,pad+chh*(j+0.5)); ctx.rotate(-Math.PI/2); ctx.fillText(l,0,0); ctx.restore(); }); ctx.restore();
+  for (let j=0;j<3;j++) for (let i=0;i<3;i++){
+    const T=Ts[i], H=Hs[j], x0=pad+cw*i+8, y0=pad+chh*j+6, w=cw-16, h=chh-14;
+    const ms=Array.from({length:201},(_,k)=>-1.3+k*0.013), fs=ms.map(m=>-H*m+0.5*(T-1)*m*m+(T/12)*m**4);
+    const lo=-0.13, hi=0.25, X=m=>x0+(m+1.3)/2.6*w, Y=f=>y0+h-(Math.max(lo,Math.min(hi,f))-lo)/(hi-lo)*h;
+    ctx.strokeStyle=C.rule; ctx.lineWidth=1; ctx.strokeRect(x0+.5,y0+.5,w,h);
+    ctx.strokeStyle=C.grid; ctx.beginPath(); ctx.moveTo(x0,Y(0)); ctx.lineTo(x0+w,Y(0)); ctx.moveTo(X(0),y0); ctx.lineTo(X(0),y0+h); ctx.stroke();
+    ctx.strokeStyle=C.accent; ctx.lineWidth=2; ctx.save(); ctx.beginPath(); ctx.rect(x0,y0,w,h); ctx.clip(); ctx.beginPath(); ms.forEach((m,k)=>{ const px=X(m), py=y0+h-(fs[k]-lo)/(hi-lo)*h; if (k) ctx.lineTo(px,py); else ctx.moveTo(px,py); }); ctx.stroke(); ctx.restore();
+    let best=0; fs.forEach((f,k)=>{ if (f<fs[best]) best=k; }); const mins=[best];
+    if (H===0 && T<1) mins.push(200-best);
+    mins.forEach(k=>{ ctx.fillStyle=C.crit; ctx.beginPath(); ctx.arc(X(ms[k]),Y(fs[k])-6,6,0,7); ctx.fill(); });
+  }
+  ctx.strokeStyle=C.crit; ctx.globalAlpha=0.35; ctx.lineWidth=10; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(pad+cw*0.5,pad+chh*0.2); ctx.lineTo(pad+cw*0.5,pad+chh*2.8); ctx.stroke();
+  ctx.strokeStyle=C.accent; ctx.beginPath(); ctx.moveTo(pad+cw*0.2,pad+chh*1.8); ctx.lineTo(pad+cw*2.8,pad+chh*1.8); ctx.stroke(); ctx.globalAlpha=1;
+  ctx.font='12px "Public Sans", system-ui, sans-serif'; ctx.fillStyle=C.muted; ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  ctx.fillText('red band: first-order jump at H = 0',pad+6,W-6); ctx.textAlign='right'; drawRich(ctx,'blue band: continuous transition at T_c',W-14,W-6);
+}
+function drawGen(){
+  const r=+$('gR').value, H=+$('gH').value, u=+$('gU').value; $('gRo').textContent=r.toFixed(2); $('gHo').textContent=H.toFixed(3); $('gUo').textContent=u.toFixed(2);
+  const ph=Array.from({length:401},(_,i)=>-1.6+i*0.008), f=p=>-H*p+r*p*p+u*p**4;
+  // extrema: 4u p^3 + 2 r p - H = 0
+  const ex=[]; let prev=null; ph.forEach(p=>{ const d=4*u*p**3+2*r*p-H; if (prev && prev[1]*d<=0){ let lo=prev[0], hi=p; for (let k=0;k<60;k++){ const mid=(lo+hi)/2, dm=4*u*mid**3+2*r*mid-H; if ((4*u*lo**3+2*r*lo-H)*dm<=0) hi=mid; else lo=mid; } ex.push((lo+hi)/2); } prev=[p,d]; });
+  const ux=[]; ex.forEach(p=>{ if (!ux.some(q=>Math.abs(q-p)<1e-6)) ux.push(Math.abs(p)<1e-9?0:p); }); const mins=ux.filter(p=>12*u*p*p+2*r>0), maxs=ux.filter(p=>12*u*p*p+2*r<=0);
+  const ys=ph.map(f), lo=Math.min(...ys);
+  plot($('gC'),{x:[-1.6,1.6],y:[lo-0.05,Math.min(1,lo+1.2)],series:[{color:C.accent,width:2.2,pts:ph.map(p=>[p,f(p)])},{dots:true,r:6,color:C.crit,pts:mins.map(p=>[p,f(p)])},{dots:true,r:4,color:C.muted,pts:maxs.map(p=>[p,f(p)])}],xlabel:'φ',ylabel:'f − α̃_0'});
+  const glob=mins.reduce((a,p)=>f(p)<f(a)?p:a,mins[0]);
+  $('gRead').innerHTML=`<dt>Minima at φ</dt><dd>${mins.map(p=>p.toFixed(3)).join(', ')}</dd><dt>Maximum at φ</dt><dd>${maxs.length?maxs.map(p=>p.toFixed(3)).join(', '):'none'}</dd><dt>Global minimum φ<sub>0</sub></dt><dd>${H===0&&r<0?'±'+Math.abs(glob).toFixed(3):glob.toFixed(3)}</dd><dt>At H = 0: <span class="rad"><span class="rs">√</span><span class="rc">−r/(2u)</span></span> for r &lt; 0</dt><dd>${r<0?Math.sqrt(-r/(2*u)).toFixed(3):'0 (r ≥ 0)'}</dd>`;
+}
+
+/* ---------- wiring ---------- */
+function setT(v){ S.t=+v; $('tSl').value=S.t; }
+$('tSl').addEventListener('input',e=>setT(e.target.value));
+document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>setT(b.dataset.t));
+$('hSl').addEventListener('input',e=>{ S.sweep=null; S.H=+e.target.value; });
+$('zSel').onchange=e=>{ Z=+e.target.value; drawPD(); };
+document.querySelectorAll('input[name=bm]').forEach(r=>r.onchange=e=>{ S.mode=e.target.value; });
+$('flip').onclick=()=>{ S.trail=[]; S.H=1; S.ball=mEq(S.t*Z,1,Z); S.sweep={k:0}; };
+$('clearTrail').onclick=()=>{ S.trail=[]; };
+$('itStep').onclick=()=>itStep(1); $('itRun').onclick=()=>itStep(20); $('itReset').onclick=()=>{ IL.it.seq=[0.3]; drawIt(); };
+(function(){ const cv=$('pd'); let drag=false; const at=e=>{ if (!cv._inv) return; const r=cv.getBoundingClientRect(), [t,h]=cv._inv(e.clientX-r.left,e.clientY-r.top); setT(t.toFixed(3)); S.sweep=null; S.H=Math.round(h*200)/200; $('hSl').value=S.H; drawPD(); };
+  cv.addEventListener('pointerdown',e=>{ drag=true; cv.setPointerCapture(e.pointerId); at(e); }); cv.addEventListener('pointermove',e=>{ if (drag) at(e); }); cv.addEventListener('pointerup',()=>drag=false); })();
+['gR','gH','gU'].forEach(id=>$(id).addEventListener('input',drawGen));
+let lastPD=0; setInterval(()=>{ const k=S.t+'|'+S.H; if (k!==lastPD){ lastPD=k; drawPD(); } },150);
+let rz=0;
+const ro=new ResizeObserver(()=>{ if (rz) return; rz=requestAnimationFrame(()=>{ rz=0; pdImg=null; drawMF(); }); });
+document.querySelectorAll('figure, .plate').forEach(el=>ro.observe(el));
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{ readColors(); pdImg=null; drawMF(); });
+
+readColors(); setT(0.8); S.ball=mEq(0.8*Z,0,Z); drawMF();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
