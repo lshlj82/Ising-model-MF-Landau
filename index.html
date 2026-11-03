@@ -184,7 +184,7 @@ button.theme-btn svg{width:20px; height:20px; fill:none; stroke:currentColor; st
 
 <div class="hero">
   <div class="figs" style="margin-top:0; grid-template-columns:1fr">
-    <figure><figcaption><b>Graphical solution of m = tanh[(T<sub>c</sub>m + H)/T]</b>Solutions are where the curve crosses the dashed diagonal. Filled dots are stable (minima of f), open dots unstable (maxima).</figcaption><canvas id="sce"></canvas></figure>
+    <figure><figcaption><b>Graphical solution of m = tanh[(T<sub>c</sub>m + H)/T]</b>Solutions are where the curve crosses the dashed diagonal. Filled dots are stable (minima of f, including the marginal minimum m = 0 at T = T<sub>c</sub>, H = 0, where f″ = 0 but the m⁴ term is positive), open dots unstable (maxima).</figcaption><canvas id="sce"></canvas></figure>
     <figure><figcaption><b>Free energy per spin f(m) and where the system sits</b>Solid: mean-field f = Jzm²/2 − k<sub>B</sub>T ln[2 cosh(β(Jzm + H))]. Dashed: the Landau expansion. The ball rolls downhill on the solid curve.</figcaption><canvas id="fm"></canvas></figure>
   </div>
   <div class="controls">
@@ -196,7 +196,7 @@ button.theme-btn svg{width:20px; height:20px; fill:none; stroke:currentColor; st
       <div class="field"><label class="lab" for="zSel">Coordination number z</label><select id="zSel"><option value="2">z = 2 (chain)</option><option value="4" selected>z = 4 (square lattice)</option><option value="6">z = 6 (cubic lattice)</option><option value="8">z = 8</option></select></div>
       <fieldset><legend>The ball</legend><div class="seg"><label><input type="radio" name="bm" value="local" checked><span>Rolls to the nearest minimum</span></label><label><input type="radio" name="bm" value="global"><span>Jumps to the lowest</span></label></div></fieldset>
     </div>
-    <div class="row"><button id="flip">Sweep H from +1 to −1 and back</button><button id="clearTrail">Clear the trail</button></div>
+    <div class="row"><button id="heroRun">Pause</button><button id="heroStep">Step</button><button id="flip">Sweep H from +1 to −1 and back</button><button id="clearTrail">Clear the trail</button></div>
     <dl class="readouts">
       <dt>T<sub>c</sub> = Jz/k<sub>B</sub></dt><dd id="rTc">–</dd>
       <dt>Solutions of the self-consistency equation</dt><dd id="rSol">–</dd>
@@ -438,7 +438,11 @@ function roots(T,H,Tc){
   for (let i=1;i<=n;i++){ const b=-1.0000001+2.0000002*i/n, gb=g(b);
     if (ga===0) out.push(a); else if (ga*gb<0){ let lo=a, hi=b; for (let k=0;k<60;k++){ const mid=(lo+hi)/2; if (g(lo)*g(mid)<=0) hi=mid; else lo=mid; } out.push((lo+hi)/2); }
     a=b; ga=gb; }
-  return out.map(m=>({m, stable: 1-(Tc/T)*(1/Math.cosh((Tc*m+H)/T))**2 > 0, f:fMF(m,T,H,Tc)}));
+  /* classify by f″ ∝ 1 − (Tc/T) sech²; where f″ = 0 (T = Tc, H = 0) the sign change of f′ decides: there m = 0 is a
+     marginal (critical) minimum, held by the positive m⁴ term, not an unstable solution. */
+  return out.map(m=>{ const c=1-(Tc/T)*(1/Math.cosh((Tc*m+H)/T))**2; let kind= c>1e-9?'min' : c<-1e-9?'max' : '';
+    if (!kind){ const h=1e-3, a=dfMF(m-h,T,H,Tc), b=dfMF(m+h,T,H,Tc); kind= a<0&&b>0?'marginal' : a>0&&b<0?'max' : 'inflection'; }
+    return {m, kind, stable: kind==='min'||kind==='marginal', f:fMF(m,T,H,Tc)}; });
 }
 /* Equilibrium m = tanh[(Tc m + H)/T]: the solution with the sign of H (the + branch at H = 0).
    H = 0, T ≥ Tc: exactly m = 0. Otherwise g(m) = tanh[(Tc m + H)/T] − m is concave on [0, 1] for H ≥ 0,
@@ -533,40 +537,62 @@ function drawIt(){
 }
 function itStep(n){ const Tc=tc(), T=S.t*Tc; for (let k=0;k<n;k++){ const m=IL.it.seq[IL.it.seq.length-1]; IL.it.seq.push(Math.tanh((Tc*m+S.H)/T)); } drawIt(); }
 
+/* roots, curves and the equilibrium m(H) depend only on (Tc, T, H): computed once per input, not every frame */
+let HC={key:''};
+function heroData(Tc,T,H){
+  const key=Tc+'|'+T+'|'+H; if (HC.key===key) return HC;
+  const ms=Array.from({length:401},(_,i)=>-1.2+i*2.4/400), fm=ms.filter(m=>Math.abs(m)<=1.05).map(m=>[m,fMF(m,T,H,Tc)]), ys=fm.map(p=>p[1]);
+  const eqKey=Tc+'|'+T, eqH= HC.eqKey===eqKey ? HC.eqH : Array.from({length:301},(_,i)=>{ const h=-1.5+i*0.01; return [h,mEq(T,h,Tc)*(h===0?0:1)]; });
+  return HC={key,eqKey,eqH,rs:roots(T,H,Tc),meq:mEq(T,H,Tc),sce:ms.map(m=>[m,Math.tanh((Tc*m+H)/T)]),fm,fl:ms.filter(m=>Math.abs(m)<=1.05).map(m=>[m,fLan(m,T,H,Tc)]),lo:Math.min(...ys),hi:Math.max(...ys)};
+}
 function drawHero(){
-  const Tc=tc(), T=S.t*Tc, H=S.H, rs=roots(T,H,Tc), meq=mEq(T,H,Tc);
+  const Tc=tc(), T=S.t*Tc, H=S.H, hd=heroData(Tc,T,H), rs=hd.rs, meq=hd.meq;
   $('tOut').textContent=S.t.toFixed(3); $('hOut').textContent=H.toFixed(3); $('rTc').textContent=Tc;
   document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('primary',Math.abs(+b.dataset.t-S.t)<1e-9));
-  const ms=Array.from({length:401},(_,i)=>-1.2+i*2.4/400);
   plot($('sce'),{x:[-1.2,1.2],y:[-1.2,1.2],series:[
     {color:C.muted,dash:[6,4],width:1.2,pts:[[-1.2,-1.2],[1.2,1.2]]},
-    {color:C.accent,width:2.2,pts:ms.map(m=>[m,Math.tanh((Tc*m+H)/T)])},
+    {color:C.accent,width:2.2,pts:hd.sce},
     {dots:true,r:6,color:C.crit,pts:rs.filter(r=>r.stable).map(r=>[r.m,r.m])},
     {dots:true,r:4,color:C.panel,pts:rs.filter(r=>!r.stable).map(r=>[r.m,r.m])}],xlabel:'m',ylabel:'tanh[(T_c m + H)/T]'});
   // open dots outline
   const cv=$('sce'); if (cv._xy){ const ctx=cv.getContext('2d'); ctx.strokeStyle=C.crit; ctx.lineWidth=2; rs.filter(r=>!r.stable).forEach(r=>{ const [x,y]=cv._xy(r.m,r.m); ctx.beginPath(); ctx.arc(x,y,5,0,7); ctx.stroke(); }); }
-  const fm=ms.filter(m=>Math.abs(m)<=1.05).map(m=>[m,fMF(m,T,H,Tc)]), fl=ms.filter(m=>Math.abs(m)<=1.05).map(m=>[m,fLan(m,T,H,Tc)]);
-  const ys=fm.map(p=>p[1]); const lo=Math.min(...ys), hi=Math.max(...ys);
+  const fm=hd.fm, fl=hd.fl, lo=hd.lo, hi=hd.hi;
   plot($('fm'),{x:[-1.05,1.05],y:[lo-0.08*(hi-lo+1e-9),hi+0.08*(hi-lo+1e-9)],series:[{color:C.accent,width:2.2,pts:fm},{color:C.ink,dash:[6,4],width:1.2,pts:fl,noScale:true},{dots:true,r:8,color:C.crit,pts:[[S.ball,fMF(S.ball,T,H,Tc)]]}],xlabel:'m',ylabel:'f(m)'});
-  $('rSol').textContent=rs.map(r=>`${r.m>=0?'+':'−'}${Math.abs(r.m).toFixed(4)}${r.stable?'':' (unstable)'}`).join(', ');
+  $('rSol').textContent=rs.map(r=>`${r.m>=0?'+':'−'}${Math.abs(r.m).toFixed(4)}${r.kind==='marginal'?' (critical minimum: f″ = 0, stable through the m⁴ term)':r.kind==='inflection'?' (inflection)':r.stable?'':' (unstable)'}`).join(', ');
   $('rM').textContent= (H===0 && S.t<1) ? `±${meq.toFixed(4)} (two equal minima)` : meq.toFixed(4);
-  $('rB').textContent=`m = ${S.ball.toFixed(4)}${Math.abs(S.ball-meq)>1e-3 && !(H===0&&Math.abs(Math.abs(S.ball)-Math.abs(meq))<1e-3) ? ' (metastable)' : ''}`;
+  // metastable only when the ball rests at another stable solution; on its way to a minimum it is just relaxing
+  const atEq=!(Math.abs(S.ball-meq)>1e-3 && !(H===0&&Math.abs(Math.abs(S.ball)-Math.abs(meq))<1e-3)), near=rs.find(r=>Math.abs(r.m-S.ball)<1e-3);
+  $('rB').textContent=`m = ${S.ball.toFixed(4)}${atEq ? '' : !near ? ' (relaxing)' : near.stable ? ' (metastable)' : ' (at an unstable solution)'}`;
   $('rF').textContent=fMF(S.ball,T,H,Tc).toFixed(4);
-  plot($('trail'),{x:[-1.5,1.5],y:[-1.05,1.05],series:[{color:C.muted,width:1,pts:Array.from({length:301},(_,i)=>{ const h=-1.5+i*0.01; return [h,mEq(T,h,Tc)*(h===0?0:1)]; })},{color:C.crit,width:1.8,pts:S.trail},{dots:true,r:5,color:C.crit,pts:[[H,S.ball]]}],xlabel:'H',ylabel:'m'});
+  plot($('trail'),{x:[-1.5,1.5],y:[-1.05,1.05],series:[{color:C.muted,width:1,pts:hd.eqH},{color:C.crit,width:1.8,pts:S.trail},{dots:true,r:5,color:C.crit,pts:[[H,S.ball]]}],xlabel:'H',ylabel:'m'});
 }
 function stepBall(){
   const Tc=tc(), T=S.t*Tc;
   if (S.mode==='global'){ const m=mEq(T,S.H,Tc); S.ball = (S.H===0 && S.t<1) ? Math.sign(S.ball||1)*Math.abs(m) : m; return; }
   for (let k=0;k<40;k++){ const d=dfMF(S.ball,T,S.H,Tc); S.ball-=0.02*d/Math.max(1,Tc/4); S.ball=Math.max(-1,Math.min(1,S.ball)); }
 }
+/* The ball and the neighbor illustration animate only while playing, on screen and in a visible tab.
+   prefers-reduced-motion pauses at load and whenever it is switched on later (switching it off does not auto-start);
+   Play, Step and the field sweep are explicit requests. While paused every input redraws once. */
+const RM=matchMedia('(prefers-reduced-motion: reduce)'), onScreen=new Map();
+let raf=0, playing=!RM.matches, lastHero='';
+const active=()=>playing && !document.hidden && (!onScreen.size || [...onScreen.values()].some(Boolean));
+function kick(){ if (!raf && active()) raf=requestAnimationFrame(loop); }
+function setPlay(on){ playing=on; $('heroRun').textContent=on?'Pause':'Play'; kick(); }
+function heroKey(){ return tc()+'|'+S.t+'|'+S.H+'|'+S.ball+'|'+S.trail.length+'|'+C.panel; }
+function refresh(){ lastHero=''; if (!raf){ drawHero(); lastHero=heroKey(); sampleNb(); drawIll(); drawHloc(); drawIt(); } }
 function loop(){
+  raf=0; if (!active()) return;
+  tick(false);
+  raf=requestAnimationFrame(loop);
+}
+function tick(force){
   if (S.sweep){ const sw=S.sweep; sw.k++; const ph=sw.k/240; let h; if (ph<1) h=1-2*ph; else if (ph<2) h=-1+2*(ph-1); else { S.sweep=null; h=S.H; } if (S.sweep){ S.H=Math.round(h*1000)/1000; $('hSl').value=S.H; } }
   const before=S.ball; stepBall();
   const last=S.trail[S.trail.length-1];
   if (!last || Math.abs(last[0]-S.H)>1e-4 || Math.abs(last[1]-S.ball)>1e-4){ S.trail.push([S.H,S.ball]); if (S.trail.length>3000) S.trail.shift(); }
-  drawHero();
-  const now=performance.now(); if (now-IL.last>250){ IL.last=now; sampleNb(); drawIll(); drawHloc(); drawIt(); }
-  requestAnimationFrame(loop);
+  const k=heroKey(); if (k!==lastHero){ lastHero=k; drawHero(); }
+  const now=performance.now(); if (force || now-IL.last>250){ IL.last=now; sampleNb(); drawIll(); drawHloc(); drawIt(); }
 }
 
 /* ---------- static charts ---------- */
@@ -584,7 +610,11 @@ function drawMF(){
   const HG=Array.from({length:301},(_,i)=>-3+i*0.02), Ts=[0.8,0.92,1,1.2];
   const s3=[];
   Ts.forEach((tt,k)=>{ s3.push({color:c[k],width:tt===0.8?2.2:1.6,pts:HG.map(h=>[h,mEq(tt*4,h,4)])}); if (tt<1){ // metastable continuation
-      const up=[], dn=[]; let mu=1, md=-1; for (const h of HG){ for (let i=0;i<400;i++){ mu=Math.tanh((4*mu+h)/(tt*4)); md=Math.tanh((4*md+h)/(tt*4)); } if (mu>0) up.push([h,mu]); if (md<0) dn.push([h,md]); }
+      // the + branch is followed from H = +3 downward and the − branch from H = −3 upward (both from −3 upward merged
+      // into the same negative solution in strong negative fields and lost the + metastable branch)
+      const up=[], dn=[]; let mu=1, md=-1;
+      for (let j=HG.length-1;j>=0;j--){ const h=HG[j]; for (let i=0;i<400;i++) mu=Math.tanh((4*mu+h)/(tt*4)); if (mu>0) up.unshift([h,mu]); }
+      for (const h of HG){ for (let i=0;i<400;i++) md=Math.tanh((4*md+h)/(tt*4)); if (md<0) dn.push([h,md]); }
       s3.push({color:c[k],width:0.9,pts:up},{color:c[k],width:0.9,pts:dn}); } });
   plot($('o3'),{x:[-3,3],y:[-1.05,1.05],series:s3,xlabel:'H (units of J, z = 4)',ylabel:'m(T, H)'});
   const Hs=[0,0.01,0.1,1], s4=[];
@@ -688,27 +718,33 @@ function drawGen(){
 }
 
 /* ---------- wiring ---------- */
-function setT(v){ S.t=+v; $('tSl').value=S.t; }
+function setT(v){ S.t=+v; $('tSl').value=S.t; if (C.panel) refresh(); }
 $('tSl').addEventListener('input',e=>setT(e.target.value));
 document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>setT(b.dataset.t));
-$('hSl').addEventListener('input',e=>{ S.sweep=null; S.H=+e.target.value; });
-$('zSel').onchange=e=>{ Z=+e.target.value; drawPD(); };
-document.querySelectorAll('input[name=bm]').forEach(r=>r.onchange=e=>{ S.mode=e.target.value; });
-$('flip').onclick=()=>{ S.trail=[]; S.H=1; S.ball=mEq(S.t*Z,1,Z); S.sweep={k:0}; };
-$('clearTrail').onclick=()=>{ S.trail=[]; };
+$('hSl').addEventListener('input',e=>{ S.sweep=null; S.H=+e.target.value; refresh(); });
+$('zSel').onchange=e=>{ Z=+e.target.value; drawPD(); refresh(); };
+document.querySelectorAll('input[name=bm]').forEach(r=>r.onchange=e=>{ S.mode=e.target.value; refresh(); });
+$('flip').onclick=()=>{ S.trail=[]; S.H=1; S.ball=mEq(S.t*Z,1,Z); S.sweep={k:0}; setPlay(true); refresh(); };
+$('clearTrail').onclick=()=>{ S.trail=[]; refresh(); };
+$('heroRun').onclick=()=>setPlay(!playing);
+$('heroStep').onclick=()=>{ setPlay(false); tick(true); };
+const io=new IntersectionObserver(es=>{ es.forEach(e=>onScreen.set(e.target,e.isIntersecting)); kick(); });
+['ill','hloc','sce','fm','trail'].forEach(id=>io.observe($(id)));
+document.addEventListener('visibilitychange',kick);
+RM.addEventListener('change',e=>{ if (e.matches) setPlay(false); });
 $('itStep').onclick=()=>itStep(1); $('itRun').onclick=()=>itStep(20); $('itReset').onclick=()=>{ IL.it.seq=[0.3]; drawIt(); };
-(function(){ const cv=$('pd'); let drag=false; const at=e=>{ if (!cv._inv) return; const r=cv.getBoundingClientRect(), [t,h]=cv._inv(e.clientX-r.left,e.clientY-r.top); setT(t.toFixed(3)); S.sweep=null; S.H=Math.round(h*200)/200; $('hSl').value=S.H; drawPD(); };
+(function(){ const cv=$('pd'); let drag=false; const at=e=>{ if (!cv._inv) return; const r=cv.getBoundingClientRect(), [t,h]=cv._inv(e.clientX-r.left,e.clientY-r.top); S.sweep=null; S.H=Math.round(h*200)/200; $('hSl').value=S.H; setT(t.toFixed(3)); drawPD(); };
   cv.addEventListener('pointerdown',e=>{ drag=true; cv.setPointerCapture(e.pointerId); at(e); }); cv.addEventListener('pointermove',e=>{ if (drag) at(e); }); cv.addEventListener('pointerup',()=>drag=false); })();
 ['gR','gH','gU'].forEach(id=>$(id).addEventListener('input',drawGen));
 let lastPD=0; setInterval(()=>{ const k=S.t+'|'+S.H; if (k!==lastPD){ lastPD=k; drawPD(); } },150);
 let rz=0;
-const ro=new ResizeObserver(()=>{ if (rz) return; rz=requestAnimationFrame(()=>{ rz=0; pdImg=null; drawMF(); }); });
+const ro=new ResizeObserver(()=>{ if (rz) return; rz=requestAnimationFrame(()=>{ rz=0; pdImg=null; drawMF(); refresh(); }); });
 document.querySelectorAll('figure, .plate').forEach(el=>ro.observe(el));
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{ readColors(); pdImg=null; drawMF(); });
-new MutationObserver(()=>{ readColors(); pdImg=null; drawMF(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{ readColors(); pdImg=null; drawMF(); refresh(); });
+new MutationObserver(()=>{ readColors(); pdImg=null; drawMF(); refresh(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
-readColors(); setT(0.8); S.ball=mEq(0.8*Z,0,Z); drawMF();
-requestAnimationFrame(loop);
+readColors(); S.ball=mEq(0.8*Z,0,Z); setT(0.8); drawMF();
+setPlay(playing);
 })();
 </script>
 <script>
